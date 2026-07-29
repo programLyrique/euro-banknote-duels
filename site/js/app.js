@@ -156,7 +156,7 @@ function designCard(design) {
   button.type = "button";
   button.className = "design-card";
   button.dataset.design = design.id;
-  button.setAttribute("aria-label", `${t("design", { id: design.id })}, ${design.designer}, ${t(design.theme)}`);
+  button.setAttribute("aria-label", `${t("design", { id: design.id })}, ${t(design.theme)}`);
 
   const stage = document.createElement("span");
   stage.className = "image-stage";
@@ -173,7 +173,7 @@ function designCard(design) {
 
   const copy = document.createElement("span");
   copy.className = "card-copy";
-  copy.innerHTML = `<span class="design-letter">${design.id}</span><span class="design-meta"><strong>${design.designer}</strong><span>${t(design.theme)}</span></span><span class="choose-mark" aria-hidden="true">→</span>`;
+  copy.innerHTML = `<span class="design-letter">${design.id}</span><span class="design-meta"><strong>${t("design", { id: design.id })}</strong><span>${t(design.theme)}</span></span><span class="choose-mark" aria-hidden="true">→</span>`;
 
   const label = document.createElement("span");
   label.className = "proposal-label";
