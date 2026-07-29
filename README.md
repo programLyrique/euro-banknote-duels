@@ -2,6 +2,8 @@
 
 An unofficial, English/French/Czech pairwise comparison of the ten shortlisted future euro banknote designs. It is a dependency-free static site: all choices stay in the visitor's browser and nothing is submitted to the ECB.
 
+Completed rankings can be shared through a score-only URL fragment. Shared links reveal no individual matchup choices, require no backend, and open as a read-only result without replacing the recipient's saved comparison.
+
 ## Run locally
 
 ```sh

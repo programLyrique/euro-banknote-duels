@@ -55,9 +55,32 @@ export function rank(ids, votes) {
   Object.values(votes).forEach((winner) => {
     if (winner in scores) scores[winner] += 1;
   });
+  return rankScores(ids, scores);
+}
+
+export function rankScores(ids, scores) {
   return ids
     .map((id) => ({ id, wins: scores[id] }))
     .sort((a, b) => b.wins - a.wins || ids.indexOf(a.id) - ids.indexOf(b.id));
+}
+
+export function encodeScores(ids, ranking) {
+  const scores = Object.fromEntries(ranking.map(({ id, wins }) => [id, wins]));
+  return ids.map((id) => `${id}${scores[id]}`).join("-");
+}
+
+export function parseScores(ids, encoded) {
+  if (typeof encoded !== "string") return null;
+  const parts = encoded.split("-");
+  if (parts.length !== ids.length) return null;
+  const scores = {};
+  for (const part of parts) {
+    const match = part.match(/^([A-Z])(\d)$/);
+    if (!match || !ids.includes(match[1]) || match[1] in scores) return null;
+    scores[match[1]] = Number(match[2]);
+  }
+  if (Object.keys(scores).length !== ids.length || Object.values(scores).reduce((sum, score) => sum + score, 0) !== ids.length * (ids.length - 1) / 2) return null;
+  return scores;
 }
 
 export function winners(ids, votes) {

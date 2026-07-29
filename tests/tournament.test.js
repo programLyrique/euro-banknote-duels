@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { allPairs, createSession, isValidSession, pairKey, previous, rank, voteFor, winners } from "../site/js/tournament.js";
+import { allPairs, createSession, encodeScores, isValidSession, pairKey, parseScores, previous, rank, rankScores, voteFor, winners } from "../site/js/tournament.js";
 
 const IDS = "ABCDEFGHIJ".split("");
 
@@ -59,4 +59,13 @@ test("requires the winner to be in the active pair", () => {
   const session = createSession(IDS, () => 0.5);
   const invalid = IDS.find((id) => !session.pairs[0].includes(id));
   assert.throws(() => voteFor(session, invalid), /active matchup/);
+});
+
+test("encodes and validates a complete score-only share fragment", () => {
+  const scores = { A: 9, B: 8, C: 7, D: 6, E: 5, F: 4, G: 3, H: 2, I: 1, J: 0 };
+  const encoded = encodeScores(IDS, rankScores(IDS, scores));
+  assert.equal(encoded, "A9-B8-C7-D6-E5-F4-G3-H2-I1-J0");
+  assert.deepEqual(parseScores(IDS, encoded), scores);
+  assert.equal(parseScores(IDS, "A9-B8-C7-D6-E5-F4-G3-H2-I1-J1"), null);
+  assert.equal(parseScores(IDS, "A9-B8-C7-D6-E5-F4-G3-H2-I1-A0"), null);
 });

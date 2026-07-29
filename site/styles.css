@@ -17,6 +17,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html { scroll-behavior: smooth; }
 
@@ -224,6 +225,7 @@ h1, h2 { margin-top: 0; font-family: Georgia, "Times New Roman", serif; font-wei
 .standing-score { min-width: 58px; text-align: right; font-weight: 850; }
 .next-steps { position: sticky; top: 1rem; display: grid; gap: 1rem; padding: 1.5rem; }
 .next-steps p { margin: 0; color: var(--muted); line-height: 1.55; }
+.next-steps .share-status { min-height: 1.2em; color: var(--green-light); font-size: 0.78rem; font-weight: 750; }
 
 .site-footer { display: grid; grid-template-columns: 1fr 1fr auto; gap: 2rem; padding: 2rem 4vw; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.75rem; line-height: 1.5; }
 .site-footer p { margin: 0; }

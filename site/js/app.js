@@ -1,5 +1,5 @@
 import { DENOMINATIONS, DESIGNS, imagePath } from "./designs.js";
-import { createSession, isValidSession, previous, rank, voteFor, winners } from "./tournament.js";
+import { createSession, encodeScores, isValidSession, parseScores, previous, rank, rankScores, voteFor } from "./tournament.js";
 import { TEXT } from "./translations.js";
 
 const SESSION_KEY = "euro-banknote-pairwise-session-v1";
@@ -21,8 +21,14 @@ const elements = {
   back: document.querySelector("#back-button"),
   resultsHero: document.querySelector("#results-hero"),
   standings: document.querySelector("#standings"),
+  resultsLabel: document.querySelector("#results-label"),
+  rankingTitle: document.querySelector("#ranking-title"),
+  resultsExplanation: document.querySelector("#results-explanation"),
+  share: document.querySelector("#share-button"),
+  shareStatus: document.querySelector("#share-status"),
   review: document.querySelector("#review-button"),
   reset: document.querySelector("#reset-button"),
+  sharedStart: document.querySelector("#shared-start-button"),
   dialog: document.querySelector("#reset-dialog"),
   confirmReset: document.querySelector("#confirm-reset"),
   live: document.querySelector("#live-region"),
@@ -30,7 +36,18 @@ const elements = {
 
 let language = loadLanguage();
 let session = loadSession();
+let sharedScores = loadSharedScores();
 let atHome = false;
+
+function loadSharedScores() {
+  const match = window.location.hash.match(/^#result=(.+)$/);
+  if (!match) return null;
+  try {
+    return parseScores(DESIGN_IDS, decodeURIComponent(match[1]));
+  } catch {
+    return null;
+  }
+}
 
 function loadLanguage() {
   const stored = localStorage.getItem(LANGUAGE_KEY);
@@ -83,7 +100,9 @@ function show(view) {
 
 function render() {
   applyLanguage();
-  if (!session || atHome) {
+  if (sharedScores && !atHome) {
+    renderResults(true);
+  } else if (!session || atHome) {
     renderIntro();
   } else if (session.index >= session.pairs.length) {
     renderResults();
@@ -163,17 +182,20 @@ function designCard(design) {
   return button;
 }
 
-function renderResults() {
+function renderResults(isShared = false) {
   show("results");
-  const winningEntries = winners(DESIGN_IDS, session.votes);
+  const ranking = isShared ? rankScores(DESIGN_IDS, sharedScores) : rank(DESIGN_IDS, session.votes);
+  const bestScore = ranking[0].wins;
+  const winningEntries = ranking.filter(({ wins }) => wins === bestScore);
   const tied = winningEntries.length > 1;
   const title = tied
     ? t("tieTitle", { count: winningEntries.length })
     : t("resultTitle", { id: winningEntries[0].id });
-  const summary = tied
-    ? t("tieSummary", { wins: winningEntries[0].wins })
-    : t("resultSummary", { wins: winningEntries[0].wins });
-  elements.resultsHero.innerHTML = `<p class="eyebrow">${t(tied ? "tieEyebrow" : "resultEyebrow")}</p><h1>${title}</h1><p>${summary}</p><div class="winner-gallery"></div>`;
+  const summaryKey = isShared
+    ? (tied ? "sharedTieSummary" : "sharedResultSummary")
+    : (tied ? "tieSummary" : "resultSummary");
+  const eyebrowKey = isShared ? "sharedResultEyebrow" : (tied ? "tieEyebrow" : "resultEyebrow");
+  elements.resultsHero.innerHTML = `<p class="eyebrow">${t(eyebrowKey)}</p><h1>${title}</h1><p>${t(summaryKey, { wins: winningEntries[0].wins })}</p><div class="winner-gallery"></div>`;
   const gallery = elements.resultsHero.querySelector(".winner-gallery");
   winningEntries.forEach(({ id, wins }) => {
     const design = byId[id];
@@ -183,7 +205,16 @@ function renderResults() {
     gallery.append(card);
   });
 
-  elements.standings.replaceChildren(...rank(DESIGN_IDS, session.votes).map(({ id, wins }) => {
+  elements.resultsLabel.textContent = t(isShared ? "sharedResults" : "fullResults");
+  elements.rankingTitle.textContent = t(isShared ? "sharedRanking" : "ranking");
+  elements.resultsExplanation.textContent = t(isShared ? "sharedExplanation" : "notOfficial");
+  elements.review.hidden = isShared;
+  elements.reset.hidden = isShared;
+  elements.sharedStart.hidden = !isShared;
+  elements.sharedStart.textContent = t(session ? "continueOwn" : "compareOwn");
+  elements.share.querySelector("[data-i18n]").textContent = t(isShared ? "shareShared" : "shareResult");
+  elements.shareStatus.textContent = "";
+  elements.standings.replaceChildren(...ranking.map(({ id, wins }) => {
     const design = byId[id];
     const item = document.createElement("li");
     item.className = "standing";
@@ -191,6 +222,55 @@ function renderResults() {
     item.setAttribute("aria-label", `${t("design", { id })}, ${t("wins", { wins })}`);
     return item;
   }));
+}
+
+function activeRanking() {
+  return sharedScores ? rankScores(DESIGN_IDS, sharedScores) : rank(DESIGN_IDS, session.votes);
+}
+
+function resultShareUrl(ranking) {
+  const url = new URL(window.location.href);
+  url.hash = `result=${encodeScores(DESIGN_IDS, ranking)}`;
+  return url.href;
+}
+
+function clearSharedResult() {
+  sharedScores = null;
+  history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Copy failed");
+}
+
+async function shareResult() {
+  const ranking = activeRanking();
+  const best = ranking[0].wins;
+  const leaders = ranking.filter(({ wins }) => wins === best).map(({ id }) => id);
+  const text = t(leaders.length > 1 ? "shareTie" : "shareSingle", { ids: leaders.join(", "), wins: best });
+  const url = resultShareUrl(ranking);
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: t("shareTitle"), text, url });
+    } else {
+      await copyText(url);
+      elements.shareStatus.textContent = t("shareCopied");
+    }
+  } catch (error) {
+    if (error?.name !== "AbortError") elements.shareStatus.textContent = t("shareFailed");
+  }
 }
 
 function startNewSession() {
@@ -202,6 +282,7 @@ function startNewSession() {
 }
 
 elements.start.addEventListener("click", () => {
+  if (sharedScores) clearSharedResult();
   if (!session) {
     startNewSession();
     return;
@@ -260,6 +341,15 @@ elements.review.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
+elements.share.addEventListener("click", shareResult);
+
+elements.sharedStart.addEventListener("click", () => {
+  clearSharedResult();
+  atHome = false;
+  if (session) render();
+  else startNewSession();
+});
+
 elements.reset.addEventListener("click", () => elements.dialog.showModal());
 elements.confirmReset.addEventListener("click", () => {
   localStorage.removeItem(SESSION_KEY);
@@ -272,6 +362,16 @@ document.querySelectorAll("[data-language]").forEach((button) => {
     localStorage.setItem(LANGUAGE_KEY, language);
     render();
   });
+});
+
+window.addEventListener("hashchange", () => {
+  const result = loadSharedScores();
+  if (result) {
+    sharedScores = result;
+    atHome = false;
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 });
 
 render();

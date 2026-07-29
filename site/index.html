@@ -82,8 +82,8 @@
           <section class="standings-panel">
             <div class="section-heading">
               <div>
-                <p class="eyebrow" data-i18n="fullResults">Full results</p>
-                <h2 data-i18n="ranking">Your ranking</h2>
+                <p id="results-label" class="eyebrow" data-i18n="fullResults">Full results</p>
+                <h2 id="ranking-title" data-i18n="ranking">Your ranking</h2>
               </div>
               <span data-i18n="scoreExplanation">One point per head-to-head win</span>
             </div>
@@ -92,13 +92,19 @@
 
           <aside class="next-steps">
             <h2 data-i18n="whatNext">What next?</h2>
-            <p data-i18n="notOfficial">This result is yours alone and has not been sent anywhere. To help inform the ECB’s decision, complete its official survey.</p>
+            <p id="results-explanation" data-i18n="notOfficial">This result is yours alone and has not been sent anywhere. To help inform the ECB’s decision, complete its official survey.</p>
             <a class="primary-button" href="https://surveys.ecb.europa.eu/10b/neweuro/" target="_blank" rel="noopener">
               <span data-i18n="officialSurvey">Go to the official ECB survey</span>
               <span aria-hidden="true">↗</span>
             </a>
+            <button id="share-button" class="secondary-button" type="button">
+              <span data-i18n="shareResult">Share my result</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+            <p id="share-status" class="share-status" aria-live="polite"></p>
             <button id="review-button" class="secondary-button" type="button" data-i18n="review">Review my last choice</button>
             <button id="reset-button" class="quiet-button" type="button" data-i18n="restart">Start a new comparison</button>
+            <button id="shared-start-button" class="secondary-button" type="button" hidden></button>
           </aside>
         </div>
       </section>
