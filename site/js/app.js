@@ -173,7 +173,7 @@ function designCard(design) {
 
   const copy = document.createElement("span");
   copy.className = "card-copy";
-  copy.innerHTML = `<span class="design-letter">${design.id}</span><span class="design-meta"><strong>${t("design", { id: design.id })}</strong><span>${t(design.theme)}</span></span><span class="choose-mark" aria-hidden="true">→</span>`;
+  copy.innerHTML = `<span class="design-letter">${design.id}</span><span class="design-meta"><strong>${t(design.theme)}</strong></span><span class="choose-mark" aria-hidden="true">→</span>`;
 
   const label = document.createElement("span");
   label.className = "proposal-label";
