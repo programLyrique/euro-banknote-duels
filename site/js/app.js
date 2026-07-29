@@ -34,8 +34,11 @@ let atHome = false;
 
 function loadLanguage() {
   const stored = localStorage.getItem(LANGUAGE_KEY);
-  if (stored === "en" || stored === "fr") return stored;
-  return navigator.language.toLowerCase().startsWith("fr") ? "fr" : "en";
+  if (["en", "fr", "cs"].includes(stored)) return stored;
+  const browserLanguage = navigator.language.toLowerCase();
+  if (browserLanguage.startsWith("fr")) return "fr";
+  if (browserLanguage.startsWith("cs")) return "cs";
+  return "en";
 }
 
 function loadSession() {

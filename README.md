@@ -1,6 +1,6 @@
 # Euro banknotes, the duel
 
-An unofficial, bilingual pairwise comparison of the ten shortlisted future euro banknote designs. It is a dependency-free static site: all choices stay in the visitor's browser and nothing is submitted to the ECB.
+An unofficial, English/French/Czech pairwise comparison of the ten shortlisted future euro banknote designs. It is a dependency-free static site: all choices stay in the visitor's browser and nothing is submitted to the ECB.
 
 ## Run locally
 
