@@ -31,6 +31,12 @@ const elements = {
   sharedStart: document.querySelector("#shared-start-button"),
   dialog: document.querySelector("#reset-dialog"),
   confirmReset: document.querySelector("#confirm-reset"),
+  imageDialog: document.querySelector("#image-dialog"),
+  imageDialogImage: document.querySelector("#image-dialog-image"),
+  imageDialogCaption: document.querySelector("#image-dialog-caption"),
+  imageDialogClose: document.querySelector("#image-dialog-close"),
+  imageDialogPrevious: document.querySelector("#image-dialog-previous"),
+  imageDialogNext: document.querySelector("#image-dialog-next"),
   live: document.querySelector("#live-region"),
 };
 
@@ -38,6 +44,8 @@ let language = loadLanguage();
 let session = loadSession();
 let sharedScores = loadSharedScores();
 let atHome = false;
+let lightboxItems = [];
+let lightboxIndex = 0;
 
 function loadSharedScores() {
   const match = window.location.hash.match(/^#result=(.+)$/);
@@ -197,13 +205,7 @@ function renderResults(isShared = false) {
   const eyebrowKey = isShared ? "sharedResultEyebrow" : (tied ? "tieEyebrow" : "resultEyebrow");
   elements.resultsHero.innerHTML = `<p class="eyebrow">${t(eyebrowKey)}</p><h1>${title}</h1><p>${t(summaryKey, { wins: winningEntries[0].wins })}</p><div class="winner-gallery"></div>`;
   const gallery = elements.resultsHero.querySelector(".winner-gallery");
-  winningEntries.forEach(({ id, wins }) => {
-    const design = byId[id];
-    const card = document.createElement("div");
-    card.className = "winner-card";
-    card.innerHTML = `<img src="${imagePath(id, 20, "front")}" alt="${t("imageAlt", { id, denomination: 20, side: t("front").toLowerCase() })}" width="1200" height="630"><strong>${t("design", { id })} · ${design.designer}</strong><span>${t("wins", { wins })} · ${t("proposalLabel")}</span>`;
-    gallery.append(card);
-  });
+  winningEntries.forEach((entry, index) => gallery.append(winnerSeriesCard(entry, index === 0)));
 
   elements.resultsLabel.textContent = t(isShared ? "sharedResults" : "fullResults");
   elements.rankingTitle.textContent = t(isShared ? "sharedRanking" : "ranking");
@@ -222,6 +224,79 @@ function renderResults(isShared = false) {
     item.setAttribute("aria-label", `${t("design", { id })}, ${t("wins", { wins })}`);
     return item;
   }));
+}
+
+function winnerSeriesCard({ id, wins }, expanded) {
+  const design = byId[id];
+  const card = document.createElement("details");
+  card.className = "winner-card";
+  card.open = expanded;
+
+  const summary = document.createElement("summary");
+  summary.innerHTML = `<span class="winner-summary-letter">${id}</span><span class="winner-summary-name"><strong>${t("design", { id })} · ${design.designer}</strong><span>${t("viewSeries")}</span></span><span class="winner-summary-score">${t("wins", { wins })}</span>`;
+
+  const board = document.createElement("div");
+  board.className = "series-board";
+  DENOMINATIONS.forEach((denomination) => {
+    const pair = document.createElement("div");
+    pair.className = "denomination-pair";
+    const heading = document.createElement("strong");
+    heading.textContent = `€${denomination}`;
+    pair.append(heading);
+    ["front", "back"].forEach((side) => {
+      const sideName = side === "front" ? t("front") : t("backSide");
+      const wrapper = document.createElement("span");
+      wrapper.className = "series-thumbnail";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.lightbox = "true";
+      button.dataset.design = id;
+      button.dataset.denomination = denomination;
+      button.dataset.side = side;
+      button.setAttribute("aria-label", t("zoomImage", { id, denomination, side: sideName.toLowerCase() }));
+      const image = document.createElement("img");
+      image.src = imagePath(id, denomination, side);
+      image.alt = "";
+      image.loading = "lazy";
+      button.append(image);
+      const label = document.createElement("small");
+      label.textContent = sideName;
+      wrapper.append(button, label);
+      pair.append(wrapper);
+    });
+    board.append(pair);
+  });
+  const source = document.createElement("p");
+  source.className = "series-source";
+  source.textContent = t("proposalLabel");
+  board.append(source);
+  card.append(summary, board);
+  return card;
+}
+
+function openLightbox(button) {
+  lightboxItems = [...button.closest(".winner-card").querySelectorAll("[data-lightbox]")];
+  lightboxIndex = lightboxItems.indexOf(button);
+  updateLightbox();
+  elements.imageDialog.showModal();
+}
+
+function updateLightbox() {
+  const item = lightboxItems[lightboxIndex];
+  if (!item) return;
+  const id = item.dataset.design;
+  const denomination = Number(item.dataset.denomination);
+  const side = item.dataset.side;
+  const sideName = side === "front" ? t("front") : t("backSide");
+  const description = t("imageAlt", { id, denomination, side: sideName.toLowerCase() });
+  elements.imageDialogImage.src = imagePath(id, denomination, side);
+  elements.imageDialogImage.alt = description;
+  elements.imageDialogCaption.textContent = `${description} · ${t("proposalLabel")}`;
+}
+
+function moveLightbox(offset) {
+  lightboxIndex = (lightboxIndex + offset + lightboxItems.length) % lightboxItems.length;
+  updateLightbox();
 }
 
 function activeRanking() {
@@ -332,6 +407,27 @@ elements.back.addEventListener("click", () => {
   session = previous(session);
   saveSession();
   renderVote();
+});
+
+elements.resultsHero.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-lightbox]");
+  if (button) openLightbox(button);
+});
+
+elements.imageDialogClose.addEventListener("click", () => elements.imageDialog.close());
+elements.imageDialogPrevious.addEventListener("click", () => moveLightbox(-1));
+elements.imageDialogNext.addEventListener("click", () => moveLightbox(1));
+elements.imageDialog.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    moveLightbox(-1);
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    moveLightbox(1);
+  }
+});
+elements.imageDialog.addEventListener("click", (event) => {
+  if (event.target === elements.imageDialog) elements.imageDialog.close();
 });
 
 elements.review.addEventListener("click", () => {

@@ -119,6 +119,16 @@
       </nav>
     </footer>
 
+    <dialog id="image-dialog" class="image-dialog" aria-labelledby="image-dialog-caption">
+      <button id="image-dialog-close" class="image-dialog-close" type="button" data-i18n-aria="closeImage" aria-label="Close image">×</button>
+      <button id="image-dialog-previous" class="image-dialog-navigation previous" type="button" data-i18n-aria="previousImage" aria-label="Previous image">←</button>
+      <figure>
+        <img id="image-dialog-image" alt="">
+        <figcaption id="image-dialog-caption"></figcaption>
+      </figure>
+      <button id="image-dialog-next" class="image-dialog-navigation next" type="button" data-i18n-aria="nextImage" aria-label="Next image">→</button>
+    </dialog>
+
     <dialog id="reset-dialog">
       <form method="dialog">
         <h2 data-i18n="resetTitle">Start over?</h2>
